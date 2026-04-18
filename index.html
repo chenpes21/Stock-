@@ -38,6 +38,7 @@
         </header>
 
         <div id="mainContent" class="grid grid-cols-1 lg:grid-cols-4 gap-6 transition-opacity duration-500 opacity-0">
+            <!-- Form Section -->
             <div class="lg:col-span-1">
                 <div class="card p-5 border-t-4 border-indigo-600 sticky top-4">
                     <h2 class="font-bold mb-4 text-indigo-600">עסקה חדשה</h2>
@@ -58,6 +59,7 @@
                 </div>
             </div>
 
+            <!-- Stats & List Section -->
             <div class="lg:col-span-3 space-y-4">
                 <div class="grid grid-cols-3 gap-2 text-center">
                     <div class="card p-3 border-r-4 border-indigo-500">
@@ -98,17 +100,16 @@
         </div>
     </div>
 
-    <!-- Modal (Close Trade) -->
+    <!-- Modal for Closing Trades -->
     <div id="closeTradeModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[110]">
         <div class="card w-full max-w-sm p-6">
             <h2 class="text-xl font-bold mb-4">סגירת עסקה: <span id="modalTicker" class="text-indigo-600"></span></h2>
             <div class="space-y-4">
                 <input type="date" id="exitDate" class="w-full p-2 border rounded-lg">
                 <input type="number" step="0.01" id="exitPrice" placeholder="מחיר יציאה" class="w-full p-2 border rounded-lg">
-                <div id="exitTotalPreview" class="p-3 rounded-lg hidden text-center border font-bold"></div>
                 <textarea id="exitReason" rows="2" class="w-full p-2 border rounded-lg" placeholder="למה סגרת?"></textarea>
                 <div class="flex gap-2">
-                    <button onclick="window.confirmCloseTrade()" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold">אשר</button>
+                    <button onclick="window.confirmCloseTrade()" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold">אשר סגירה</button>
                     <button onclick="window.closeModal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg">ביטול</button>
                 </div>
             </div>
@@ -120,29 +121,27 @@
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- כאן עליך להדביק את הפרטים שלך מ-Firebase ---
+        // --- ה-CONFIG המעודכן שלך ---
         const myCustomConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+          apiKey: "AIzaSyCZyQmzgaiRuK5J_GaBL0yLEoI4Lpi6pOE",
+          authDomain: "stock-journal-cfa54.firebaseapp.com",
+          projectId: "stock-journal-cfa54",
+          storageBucket: "stock-journal-cfa54.firebasestorage.app",
+          messagingSenderId: "361104616202",
+          appId: "1:361104616202:web:b42b551ae3e39698a468f3",
+          measurementId: "G-V32687MT7Z"
         };
 
-        // מנגנון בחירת הגדרות (Canvas או GitHub)
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myCustomConfig;
-        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'trading-journal-live';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'stock-journal-app';
 
         let trades = [];
         let tradeToCloseId = null;
         let unsubscribe = null;
 
-        // התחברות חכמה
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -151,17 +150,17 @@
                     await signInAnonymously(auth);
                 }
             } catch (err) {
-                console.error("Auth error:", err);
-                document.getElementById('userStatus').innerText = "שגיאת API Key. וודא שהעתקת את הפרטים מ-Firebase לקוד.";
+                console.error("Auth Error:", err);
+                document.getElementById('userStatus').innerText = "שגיאת התחברות. וודא ש-Anonymous Auth מופעל ב-Firebase.";
             }
         };
         initAuth();
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById('userStatus').innerText = "מחובר ומסונכרן לענן";
+                document.getElementById('userStatus').innerText = "מחובר לענן: " + user.uid.substring(0, 5);
                 document.getElementById('statusDot').className = "w-2 h-2 rounded-full bg-green-500";
-                document.getElementById('statusText').innerText = "מחובר";
+                document.getElementById('statusText').innerText = "פעיל";
                 document.getElementById('mainContent').classList.remove('opacity-0');
                 setupDataListener(user.uid);
             }
@@ -170,20 +169,19 @@
         function setupDataListener(uid) {
             if (unsubscribe) unsubscribe();
             const tradesCol = collection(db, 'artifacts', appId, 'users', uid, 'trades');
-            
             unsubscribe = onSnapshot(tradesCol, (snapshot) => {
                 trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 trades.sort((a, b) => b.createdAt - a.createdAt);
                 renderTrades();
                 updateStats();
             }, (err) => {
-                console.error("Firestore Error:", err);
+                console.error("Firestore error:", err);
             });
         }
 
         function renderTrades() {
             const list = document.getElementById('tradesList');
-            list.innerHTML = trades.length ? '' : '<tr><td colspan="5" class="p-8 text-center text-gray-400">אין עסקאות בענן</td></tr>';
+            list.innerHTML = trades.length ? '' : '<tr><td colspan="5" class="p-8 text-center text-gray-400">טרם נשמרו עסקאות</td></tr>';
             
             trades.forEach(t => {
                 const isClosed = t.status === 'closed';
@@ -194,14 +192,14 @@
                 }
 
                 const tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-slate-50";
+                tr.className = "border-b hover:bg-slate-50 transition-colors";
                 tr.innerHTML = `
                     <td class="p-3 font-bold text-indigo-700">${t.ticker}<div class="text-[9px] text-gray-400">${t.buyDate}</div></td>
                     <td class="p-3">$${t.buyPrice}<div class="text-[9px] text-gray-400">${t.quantity} יח'</div></td>
                     <td class="p-3 text-amber-500 font-bold">$${t.targetPrice}</td>
                     <td class="p-3">${pl}</td>
                     <td class="p-3 text-left">
-                        ${!isClosed ? `<button onclick="window.openCloseModal('${t.id}')" class="text-green-600 font-bold ml-2">סגור</button>` : ''}
+                        ${!isClosed ? `<button onclick="window.openCloseModal('${t.id}')" class="text-green-600 font-bold ml-2 hover:underline">סגור</button>` : ''}
                         <button onclick="window.deleteTrade('${t.id}')" class="text-red-300 hover:text-red-500">מחק</button>
                     </td>
                 `;
@@ -260,13 +258,13 @@
         };
 
         window.deleteTrade = async (id) => {
-            if (confirm("מחיקה מהענן?")) {
+            if (confirm("האם למחוק עסקה זו מהענן?")) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'trades', id));
             }
         };
 
         window.clearAll = async () => {
-            if (confirm("למחוק הכל לצמיתות?")) {
+            if (confirm("זהירות! פעולה זו תמחק את כל העסקאות שלך לצמיתות מהענן. להמשיך?")) {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'trades'));
                 const batch = writeBatch(db);
                 snap.docs.forEach(d => batch.delete(d.ref));
@@ -281,7 +279,7 @@
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
             const link = document.createElement("a");
             link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", "trades.csv");
+            link.setAttribute("download", "trading_journal.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -290,7 +288,7 @@
         document.getElementById('buyPrice').oninput = document.getElementById('quantity').oninput = () => {
             const p = parseFloat(document.getElementById('buyPrice').value) || 0;
             const q = parseFloat(document.getElementById('quantity').value) || 0;
-            document.getElementById('totalAmount').value = "$" + (p * q).toLocaleString();
+            document.getElementById('totalAmount').value = "סה\"כ: $" + (p * q).toLocaleString();
         };
 
         document.getElementById('buyDate').valueAsDate = new Date();
