@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>יומן מניות - כניסה עם חשבון</title>
+    <title>יומן מניות - ניהול עסקאות מתקדם</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700&display=swap');
@@ -16,6 +16,10 @@
             border-radius: 1rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
+        /* מניעת שבירת שורות בטבלה במובייל */
+        th, td {
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="p-2 md:p-8">
@@ -23,22 +27,22 @@
     <div class="max-w-7xl mx-auto">
         <!-- מסך התחברות -->
         <div id="authScreen" class="fixed inset-0 bg-slate-100 z-[200] flex items-center justify-center p-4">
-            <div class="card w-full max-w-md p-8 text-center">
+            <div class="card w-full max-w-md p-8 text-center border border-slate-200">
                 <h2 class="text-3xl font-bold text-slate-800 mb-2">יומן מסחר במניות</h2>
-                <p class="text-gray-500 mb-8">התחבר כדי לשמור את הנתונים לצמיתות</p>
+                <p class="text-gray-500 mb-8">התחבר כדי לסנכרן נתונים לענן</p>
                 
                 <div class="space-y-4 text-right">
                     <div>
                         <label class="block text-xs font-bold text-gray-400 mb-1 mr-1">אימייל</label>
-                        <input type="email" id="authEmail" placeholder="your@email.com" class="w-full p-3 border rounded-xl text-left dir-ltr">
+                        <input type="email" id="authEmail" placeholder="your@email.com" class="w-full p-3 border rounded-xl text-left dir-ltr focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-400 mb-1 mr-1">סיסמה (לפחות 6 תווים)</label>
-                        <input type="password" id="authPassword" placeholder="••••••••" class="w-full p-3 border rounded-xl text-left dir-ltr">
+                        <input type="password" id="authPassword" placeholder="••••••••" class="w-full p-3 border rounded-xl text-left dir-ltr focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                     </div>
                     
                     <div class="flex gap-2 pt-4">
-                        <button id="loginBtn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors">התחברות</button>
+                        <button id="loginBtn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">התחברות</button>
                         <button id="signupBtn" class="flex-1 bg-white border border-indigo-600 text-indigo-600 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-colors">הרשמה</button>
                     </div>
                     <p id="authError" class="text-red-500 text-sm font-bold min-h-[1.25rem] text-center"></p>
@@ -53,73 +57,97 @@
                     <h1 class="text-2xl font-bold text-slate-800">יומן מסחר במניות</h1>
                     <div class="flex items-center gap-2 mt-1">
                         <span id="userEmailDisplay" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded"></span>
-                        <button id="logoutBtn" class="text-[10px] text-gray-400 hover:text-red-500 font-bold underline">התנתק</button>
+                        <button id="logoutBtn" class="text-[10px] text-gray-400 hover:text-red-500 font-bold underline transition-colors">התנתק</button>
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="window.exportToCSV()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold transition-colors">
+                    <button id="exportCsvBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold transition-colors">
                         ייצוא לאקסל (CSV)
                     </button>
                     <div id="cloudIndicator" class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 text-xs font-bold text-gray-500">
                         <div id="statusDot" class="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span id="statusText">מסונכרן ומאובטח</span>
+                        <span id="statusText">מחובר לענן</span>
                     </div>
                 </div>
             </header>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                <!-- Form Section -->
+                <!-- טופס עסקה חדשה -->
                 <div class="lg:col-span-1">
                     <div class="card p-5 border-t-4 border-indigo-600 sticky top-4">
-                        <h2 class="font-bold mb-4 text-indigo-600">עסקה חדשה</h2>
+                        <h2 class="font-bold mb-4 text-indigo-600 flex items-center gap-2">
+                             עסקה חדשה
+                        </h2>
                         <form id="tradeForm" class="space-y-4">
                             <div class="grid grid-cols-2 gap-2 lg:grid-cols-1">
-                                <input type="text" id="ticker" placeholder="טיקר (AAPL)" class="p-2 border rounded-lg uppercase text-sm" required>
-                                <input type="date" id="buyDate" class="p-2 border rounded-lg text-sm" required>
+                                <input type="text" id="ticker" placeholder="טיקר (AAPL)" class="p-2 border rounded-lg uppercase text-sm focus:border-indigo-500 outline-none" required>
+                                <input type="date" id="buyDate" class="p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none" required>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
-                                <input type="number" step="0.01" id="buyPrice" placeholder="מחיר קנייה" class="p-2 border rounded-lg text-sm" required>
-                                <input type="number" id="quantity" placeholder="כמות" class="p-2 border rounded-lg text-sm" required>
+                                <input type="number" step="0.01" id="buyPrice" placeholder="מחיר קנייה" class="p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none" required>
+                                <input type="number" id="quantity" placeholder="כמות" class="p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none" required>
                             </div>
-                            <input type="text" id="totalAmount" placeholder='סה"כ עסקה' class="w-full p-2 border rounded-lg bg-indigo-50 text-indigo-900 font-bold text-sm" readonly>
-                            <input type="number" step="0.01" id="targetPrice" placeholder="מחיר יעד" class="w-full p-2 border rounded-lg text-sm" required>
-                            <textarea id="buyReason" rows="2" class="w-full p-2 border rounded-lg text-sm" placeholder="למה קנית?"></textarea>
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold shadow-md hover:bg-indigo-700">שמור לענן</button>
+                            <input type="text" id="totalAmountDisplay" placeholder='סה"כ עסקה' class="w-full p-2 border rounded-lg bg-indigo-50 text-indigo-900 font-bold text-sm" readonly>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="number" step="0.01" id="targetPrice" placeholder="מחיר יעד" class="p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none">
+                                <input type="number" step="0.01" id="stopLoss" placeholder="סטופ לוס" class="p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none">
+                            </div>
+                            
+                            <div id="projectionsContainer" class="hidden space-y-2">
+                                <div id="expectedProfitContainer" class="p-2 bg-green-50 rounded-lg border border-green-100">
+                                    <p class="text-[10px] text-green-700 font-bold">רווח צפוי ביעד:</p>
+                                    <div class="flex justify-between items-center">
+                                        <span id="expectedProfitAmount" class="text-sm font-bold text-green-600">$0</span>
+                                        <span id="expectedProfitPercent" class="text-sm font-bold text-green-600">0%</span>
+                                    </div>
+                                </div>
+                                <div id="expectedLossContainer" class="p-2 bg-red-50 rounded-lg border border-red-100">
+                                    <p class="text-[10px] text-red-700 font-bold">הפסד צפוי בסטופ לוס:</p>
+                                    <div class="flex justify-between items-center">
+                                        <span id="expectedLossAmount" class="text-sm font-bold text-red-600">$0</span>
+                                        <span id="expectedLossPercent" class="text-sm font-bold text-red-600">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <textarea id="buyReason" rows="2" class="w-full p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none" placeholder="הערות קנייה (למה נכנסת?)"></textarea>
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold shadow-md hover:bg-indigo-700 transition-all active:scale-95">שמור עסקה</button>
                         </form>
                     </div>
                 </div>
 
-                <!-- Stats & List Section -->
+                <!-- סטטיסטיקה וטבלה -->
                 <div class="lg:col-span-3 space-y-4">
-                    <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="grid grid-cols-3 gap-3 text-center">
                         <div class="card p-3 border-r-4 border-indigo-500">
-                            <span class="block text-[10px] text-gray-500 font-bold">פתוחות</span>
-                            <span id="openTradesCount" class="text-xl font-bold text-indigo-600">0</span>
+                            <span class="block text-[10px] text-gray-500 font-bold uppercase">פתוחות</span>
+                            <span id="openTradesCount" class="text-2xl font-bold text-indigo-600">0</span>
                         </div>
                         <div class="card p-3 border-r-4 border-green-500">
-                            <span class="block text-[10px] text-gray-500 font-bold">סגורות</span>
-                            <span id="closedTradesCount" class="text-xl font-bold text-green-600">0</span>
+                            <span class="block text-[10px] text-gray-500 font-bold uppercase">סגורות</span>
+                            <span id="closedTradesCount" class="text-2xl font-bold text-green-600">0</span>
                         </div>
                         <div class="card p-3 border-r-4 border-amber-500">
-                            <span class="block text-[10px] text-gray-500 font-bold">הצלחה</span>
-                            <span id="successRate" class="text-xl font-bold text-amber-500">0%</span>
+                            <span class="block text-[10px] text-gray-500 font-bold uppercase">הצלחה</span>
+                            <span id="successRate" class="text-2xl font-bold text-amber-500">0%</span>
                         </div>
                     </div>
 
-                    <div class="card overflow-hidden">
+                    <div class="card overflow-hidden border border-slate-100">
                         <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
                             <h2 class="font-bold text-slate-700">היסטוריית עסקאות</h2>
-                            <button onclick="window.clearAll()" class="text-[10px] text-red-400 hover:text-red-600 font-bold">מחק הכל מהענן</button>
+                            <button id="clearAllBtn" class="text-[10px] text-red-400 hover:text-red-600 font-bold transition-colors">מחק הכל</button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-right border-collapse text-sm">
                                 <thead class="bg-slate-50 text-gray-400 text-[10px] uppercase border-b">
                                     <tr>
-                                        <th class="p-3">מנייה</th>
-                                        <th class="p-3">קנייה</th>
-                                        <th class="p-3">יעד</th>
-                                        <th class="p-3">תשואה</th>
-                                        <th class="p-3">פעולות</th>
+                                        <th class="p-4">מנייה</th>
+                                        <th class="p-4">קנייה (סה"כ)</th>
+                                        <th class="p-4 text-center">יעד / סטופ לוס</th>
+                                        <th class="p-4">תשואה (רווח/הפסד כספי)</th>
+                                        <th class="p-4 text-left">פעולות</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tradesList"></tbody>
@@ -131,17 +159,35 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- מודל סגירת עסקה -->
     <div id="closeTradeModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-[110]">
-        <div class="card w-full max-w-sm p-6">
-            <h2 class="text-xl font-bold mb-4">סגירת עסקה: <span id="modalTicker" class="text-indigo-600"></span></h2>
+        <div class="card w-full max-w-sm p-6 animate-in fade-in zoom-in duration-200">
+            <h2 class="text-xl font-bold mb-1">סגירת עסקה: <span id="modalTicker" class="text-indigo-600"></span></h2>
+            <p id="modalBuyDetails" class="text-[11px] text-gray-400 mb-4 font-bold"></p>
+            
             <div class="space-y-4">
-                <input type="date" id="exitDate" class="w-full p-2 border rounded-lg">
-                <input type="number" step="0.01" id="exitPrice" placeholder="מחיר יציאה" class="w-full p-2 border rounded-lg">
-                <textarea id="exitReason" rows="2" class="w-full p-2 border rounded-lg" placeholder="למה סגרת?"></textarea>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1 mr-1">תאריך יציאה</label>
+                    <input type="date" id="exitDate" class="w-full p-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1 mr-1">מחיר יציאה</label>
+                    <input type="number" step="0.01" id="exitPrice" placeholder="מחיר יציאה" class="w-full p-2 border rounded-lg text-sm">
+                </div>
+                
+                <div id="closingProjection" class="p-3 bg-slate-50 rounded-xl border border-slate-200 hidden">
+                    <p class="text-[10px] text-slate-500 font-bold mb-1">רווח/הפסד במימוש:</p>
+                    <div class="flex justify-between items-center">
+                        <span id="closingAmount" class="text-lg font-bold"></span>
+                        <span id="closingPercent" class="text-sm font-bold"></span>
+                    </div>
+                </div>
+
+                <textarea id="exitReason" rows="2" class="w-full p-2 border rounded-lg text-sm" placeholder="הערות מכירה"></textarea>
+                
                 <div class="flex gap-2">
-                    <button onclick="window.confirmCloseTrade()" class="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold">אשר סגירה</button>
-                    <button onclick="window.closeModal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg">ביטול</button>
+                    <button id="confirmCloseBtn" class="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold shadow-lg hover:bg-green-700 active:scale-95 transition-all">בצע מכירה</button>
+                    <button id="closeModalBtn" class="flex-1 bg-gray-100 text-gray-600 py-3 rounded-lg font-bold hover:bg-gray-200 transition-all">ביטול</button>
                 </div>
             </div>
         </div>
@@ -149,115 +195,214 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-          apiKey: "AIzaSyCZyQmzgaiRuK5J_GaBL0yLEoI4Lpi6pOE",
-          authDomain: "stock-journal-cfa54.firebaseapp.com",
-          projectId: "stock-journal-cfa54",
-          storageBucket: "stock-journal-cfa54.firebasestorage.app",
-          messagingSenderId: "361104616202",
-          appId: "1:361104616202:web:b42b551ae3e39698a468f3",
-          measurementId: "G-V32687MT7Z"
-        };
+        const firebaseConfig = JSON.parse('{"apiKey": "AIzaSyCZyQmzgaiRuK5J_GaBL0yLEoI4Lpi6pOE", "authDomain": "stock-journal-cfa54.firebaseapp.com", "projectId": "stock-journal-cfa54", "storageBucket": "stock-journal-cfa54.firebasestorage.app", "messagingSenderId": "361104616202", "appId": "1:361104616202:web:b42b551ae3e39698a468f3", "measurementId": "G-V32687MT7Z"}');
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = 'stock-journal-app';
+        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'stock-journal-cfa54';
 
         let trades = [];
         let tradeToCloseId = null;
         let unsubscribe = null;
 
-        const authScreen = document.getElementById('authScreen');
-        const appScreen = document.getElementById('appScreen');
-        const authError = document.getElementById('authError');
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                try { await signInWithCustomToken(auth, __initial_auth_token); } catch (e) {}
+            }
+        };
+        initAuth();
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                authScreen.classList.add('hidden');
-                appScreen.classList.remove('hidden');
-                document.getElementById('userEmailDisplay').innerText = user.email;
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('appScreen').classList.remove('hidden');
+                document.getElementById('userEmailDisplay').innerText = user.email || "משתמש";
                 setupDataListener(user.uid);
             } else {
-                authScreen.classList.remove('hidden');
-                appScreen.classList.add('hidden');
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('appScreen').classList.add('hidden');
                 if (unsubscribe) unsubscribe();
             }
         });
 
-        document.getElementById('signupBtn').onclick = async () => {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-            if (!email || !password) return authError.innerText = "נא למלא אימייל וסיסמה";
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-                authError.innerText = "";
-            } catch (err) {
-                handleAuthError(err);
-            }
-        };
-
-        document.getElementById('loginBtn').onclick = async () => {
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
-            if (!email || !password) return authError.innerText = "נא למלא אימייל וסיסמה";
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                authError.innerText = "";
-            } catch (err) {
-                handleAuthError(err);
-            }
-        };
-
-        function handleAuthError(err) {
-            console.error(err);
-            if (err.code === 'auth/email-already-in-use') authError.innerText = "האימייל כבר קיים במערכת";
-            else if (err.code === 'auth/weak-password') authError.innerText = "הסיסמה חלשה מדי (לפחות 6 תווים)";
-            else if (err.code === 'auth/invalid-credential') authError.innerText = "פרטי התחברות שגויים";
-            else authError.innerText = "שגיאה: " + err.message;
-        }
-
-        document.getElementById('logoutBtn').onclick = () => signOut(auth);
-
         function setupDataListener(uid) {
-            if (unsubscribe) unsubscribe();
-            // שימוש בנתיב המאובטח לפי הכללים
-            const tradesCol = collection(db, 'artifacts', appId, 'users', uid, 'trades');
-            unsubscribe = onSnapshot(tradesCol, (snapshot) => {
-                trades = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                trades.sort((a, b) => b.createdAt - a.createdAt);
+            const colRef = collection(db, 'artifacts', currentAppId, 'users', uid, 'trades');
+            unsubscribe = onSnapshot(colRef, (snap) => {
+                trades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                trades.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 renderTrades();
                 updateStats();
-            }, (error) => {
-                if (error.code === 'permission-denied') {
-                    console.error("Permission denied. Make sure to update Firestore Rules.");
-                }
-            });
+            }, (err) => console.error("Firestore Error:", err));
         }
+
+        const updateProjections = () => {
+            const bp = parseFloat(document.getElementById('buyPrice').value);
+            const q = parseInt(document.getElementById('quantity').value);
+            const tp = parseFloat(document.getElementById('targetPrice').value);
+            const sl = parseFloat(document.getElementById('stopLoss').value);
+            
+            if (bp && q) {
+                document.getElementById('totalAmountDisplay').value = "סה\"כ עסקה: $" + (bp * q).toLocaleString(undefined, {minimumFractionDigits: 2});
+            } else {
+                document.getElementById('totalAmountDisplay').value = "";
+            }
+
+            const showProj = (bp && q && (tp || sl));
+            document.getElementById('projectionsContainer').className = showProj ? 'space-y-2' : 'hidden';
+
+            if (tp && bp && q) {
+                const profit = (tp - bp) * q;
+                const perc = ((tp - bp) / bp) * 100;
+                document.getElementById('expectedProfitAmount').innerText = `$${profit.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                document.getElementById('expectedProfitPercent').innerText = `${perc.toFixed(2)}%`;
+                document.getElementById('expectedProfitContainer').classList.remove('hidden');
+            } else document.getElementById('expectedProfitContainer').classList.add('hidden');
+
+            if (sl && bp && q) {
+                const loss = (sl - bp) * q;
+                const perc = ((sl - bp) / bp) * 100;
+                document.getElementById('expectedLossAmount').innerText = `$${Math.abs(loss).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+                document.getElementById('expectedLossPercent').innerText = `${perc.toFixed(2)}%`;
+                document.getElementById('expectedLossContainer').classList.remove('hidden');
+            } else document.getElementById('expectedLossContainer').classList.add('hidden');
+        };
+
+        const updateClosingProjections = () => {
+            const trade = trades.find(t => t.id === tradeToCloseId);
+            const ep = parseFloat(document.getElementById('exitPrice').value);
+            const projDiv = document.getElementById('closingProjection');
+            
+            if (!trade || isNaN(ep)) {
+                projDiv.classList.add('hidden');
+                return;
+            }
+
+            projDiv.classList.remove('hidden');
+            const diff = (ep - trade.buyPrice) * trade.quantity;
+            const perc = ((ep - trade.buyPrice) / trade.buyPrice) * 100;
+
+            const amountEl = document.getElementById('closingAmount');
+            const percentEl = document.getElementById('closingPercent');
+
+            amountEl.innerText = (diff >= 0 ? '+' : '') + "$" + diff.toLocaleString(undefined, {minimumFractionDigits: 2});
+            percentEl.innerText = (perc >= 0 ? '+' : '') + perc.toFixed(2) + "%";
+
+            if (diff >= 0) {
+                amountEl.className = "text-lg font-bold text-green-600";
+                percentEl.className = "text-sm font-bold text-green-600";
+                projDiv.className = "p-3 bg-green-50 rounded-xl border border-green-200";
+            } else {
+                amountEl.className = "text-lg font-bold text-red-600";
+                percentEl.className = "text-sm font-bold text-red-600";
+                projDiv.className = "p-3 bg-red-50 rounded-xl border border-red-200";
+            }
+        };
+
+        document.getElementById('exitPrice').addEventListener('input', updateClosingProjections);
+        ['buyPrice', 'quantity', 'targetPrice', 'stopLoss'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateProjections);
+        });
+
+        window.openCloseModal = (id) => {
+            tradeToCloseId = id;
+            const t = trades.find(x => x.id === id);
+            document.getElementById('modalTicker').innerText = t.ticker;
+            document.getElementById('modalBuyDetails').innerText = `קנייה: $${t.buyPrice} | כמות: ${t.quantity}`;
+            document.getElementById('exitDate').valueAsDate = new Date();
+            document.getElementById('exitPrice').value = "";
+            document.getElementById('exitReason').value = "";
+            document.getElementById('closingProjection').classList.add('hidden');
+            document.getElementById('closeTradeModal').classList.replace('hidden', 'flex');
+        };
+
+        document.getElementById('confirmCloseBtn').onclick = async () => {
+            const ep = parseFloat(document.getElementById('exitPrice').value);
+            const ed = document.getElementById('exitDate').value;
+            if (!ep || !ed || !auth.currentUser) return;
+            
+            const docRef = doc(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades', tradeToCloseId);
+            await updateDoc(docRef, {
+                status: 'closed',
+                exitPrice: ep,
+                exitDate: new Date(ed).toLocaleDateString('he-IL'),
+                exitReason: document.getElementById('exitReason').value
+            });
+            document.getElementById('closeTradeModal').classList.replace('flex', 'hidden');
+        };
+
+        document.getElementById('tradeForm').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!auth.currentUser) return;
+
+            const data = {
+                ticker: document.getElementById('ticker').value.toUpperCase(),
+                buyDate: new Date(document.getElementById('buyDate').value).toLocaleDateString('he-IL'),
+                buyPrice: parseFloat(document.getElementById('buyPrice').value),
+                quantity: parseInt(document.getElementById('quantity').value),
+                targetPrice: parseFloat(document.getElementById('targetPrice').value) || null,
+                stopLoss: parseFloat(document.getElementById('stopLoss').value) || null,
+                buyReason: document.getElementById('buyReason').value,
+                status: 'open',
+                createdAt: Date.now()
+            };
+            await addDoc(collection(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades'), data);
+            e.target.reset();
+            document.getElementById('buyDate').valueAsDate = new Date();
+            updateProjections();
+        };
 
         function renderTrades() {
             const list = document.getElementById('tradesList');
-            list.innerHTML = trades.length ? '' : '<tr><td colspan="5" class="p-8 text-center text-gray-400">טרם נשמרו עסקאות</td></tr>';
+            list.innerHTML = trades.length ? '' : '<tr><td colspan="5" class="p-12 text-center text-gray-400">טרם הוזנו עסקאות. זה הזמן להתחיל לסחור!</td></tr>';
+            
             trades.forEach(t => {
                 const isClosed = t.status === 'closed';
-                let pl = '<span class="text-blue-500 font-bold">פתוחה</span>';
+                const totalCost = t.buyPrice * t.quantity;
+                let plHtml = '<span class="text-indigo-500 font-bold italic text-xs">פוזיציה פתוחה...</span>';
+                
                 if (isClosed) {
-                    const diff = ((t.exitPrice - t.buyPrice) / t.buyPrice) * 100;
-                    pl = `<span class="${diff >= 0 ? 'text-green-600' : 'text-red-600'} font-bold">${diff > 0 ? '+' : ''}${diff.toFixed(2)}%</span>`;
+                    const diffPerc = ((t.exitPrice - t.buyPrice) / t.buyPrice) * 100;
+                    const diffAmount = (t.exitPrice - t.buyPrice) * t.quantity;
+                    const isWin = diffAmount >= 0;
+                    
+                    plHtml = `
+                        <div class="flex flex-col">
+                            <span class="${isWin ? 'text-green-600' : 'text-red-600'} font-bold text-base">
+                                ${isWin ? '+' : ''}${diffPerc.toFixed(2)}% 
+                                <span class="text-xs">(${isWin ? '+' : ''}$${diffAmount.toLocaleString(undefined, {minimumFractionDigits: 2})})</span>
+                            </span>
+                            <div class="text-[10px] text-slate-500 font-bold">יציאה: $${t.exitPrice} ב-${t.exitDate}</div>
+                        </div>
+                    `;
                 }
+                
                 const tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-slate-50 transition-colors";
+                tr.className = "border-b hover:bg-slate-50/50 transition-colors";
                 tr.innerHTML = `
-                    <td class="p-3 font-bold text-indigo-700">${t.ticker}<div class="text-[9px] text-gray-400">${t.buyDate}</div></td>
-                    <td class="p-3">$${t.buyPrice}<div class="text-[9px] text-gray-400">${t.quantity} יח'</div></td>
-                    <td class="p-3 text-amber-500 font-bold">$${t.targetPrice}</td>
-                    <td class="p-3">${pl}</td>
-                    <td class="p-3 text-left">
-                        ${!isClosed ? `<button onclick="window.openCloseModal('${t.id}')" class="text-green-600 font-bold ml-2">סגור</button>` : ''}
-                        <button onclick="window.deleteTrade('${t.id}')" class="text-red-300 hover:text-red-500">מחק</button>
+                    <td class="p-4 font-bold text-slate-700">
+                        ${t.ticker}
+                        <div class="text-[9px] text-gray-400 font-normal">${t.buyDate}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-slate-700">$${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        <div class="text-[10px] text-gray-400">($${t.buyPrice} × ${t.quantity})</div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="text-green-600 font-bold text-[11px]">יעד: ${t.targetPrice ? '$' + t.targetPrice : '-'}</div>
+                        <div class="text-[13px] text-red-500 font-black uppercase mt-1">סטופ לוס: ${t.stopLoss ? '$' + t.stopLoss : '-'}</div>
+                    </td>
+                    <td class="p-4">${plHtml}</td>
+                    <td class="p-4 text-left">
+                        <div class="flex gap-3 justify-end items-center">
+                            ${!isClosed ? `<button onclick="window.openCloseModal('${t.id}')" class="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-md font-bold text-xs hover:bg-indigo-100 transition-colors">סגור עסקה</button>` : ''}
+                            <button onclick="window.deleteTrade('${t.id}')" class="text-slate-300 hover:text-red-500 transition-all p-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
                     </td>
                 `;
                 list.appendChild(tr);
@@ -266,76 +411,50 @@
 
         function updateStats() {
             const closed = trades.filter(t => t.status === 'closed');
-            const succ = closed.filter(t => t.exitPrice >= t.targetPrice).length;
-            document.getElementById('openTradesCount').innerText = trades.filter(t => t.status === 'open').length;
+            document.getElementById('openTradesCount').innerText = trades.length - closed.length;
             document.getElementById('closedTradesCount').innerText = closed.length;
-            document.getElementById('successRate').innerText = (closed.length ? Math.round((succ/closed.length)*100) : 0) + '%';
+            const wins = closed.filter(t => t.exitPrice >= t.buyPrice).length;
+            document.getElementById('successRate').innerText = (closed.length ? Math.round((wins/closed.length)*100) : 0) + '%';
         }
 
-        document.getElementById('tradeForm').onsubmit = async (e) => {
-            e.preventDefault();
-            if (!auth.currentUser) return;
-            const data = {
-                ticker: document.getElementById('ticker').value.toUpperCase(),
-                buyDate: new Date(document.getElementById('buyDate').value).toLocaleDateString('he-IL'),
-                buyPrice: parseFloat(document.getElementById('buyPrice').value),
-                quantity: parseInt(document.getElementById('quantity').value),
-                targetPrice: parseFloat(document.getElementById('targetPrice').value),
-                buyReason: document.getElementById('buyReason').value,
-                status: 'open',
-                createdAt: Date.now()
-            };
-            await addDoc(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'trades'), data);
-            e.target.reset();
-            document.getElementById('buyDate').valueAsDate = new Date();
-        };
-
-        window.openCloseModal = (id) => {
-            tradeToCloseId = id;
-            const t = trades.find(x => x.id === id);
-            document.getElementById('modalTicker').innerText = t.ticker;
-            document.getElementById('exitDate').valueAsDate = new Date();
-            document.getElementById('closeTradeModal').classList.replace('hidden', 'flex');
-        };
-        window.closeModal = () => document.getElementById('closeTradeModal').classList.replace('flex', 'hidden');
-        window.confirmCloseTrade = async () => {
-            const ep = parseFloat(document.getElementById('exitPrice').value);
-            const ed = document.getElementById('exitDate').value;
-            if (!ep || !ed) return;
-            await updateDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'trades', tradeToCloseId), {
-                status: 'closed', exitPrice: ep, exitDate: new Date(ed).toLocaleDateString('he-IL'), exitReason: document.getElementById('exitReason').value
-            });
-            closeModal();
-        };
-        window.deleteTrade = async (id) => {
-            if (confirm("האם למחוק?")) await deleteDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'trades', id));
-        };
-        window.clearAll = async () => {
-            if (confirm("מחיקה סופית של הכל?")) {
-                const snap = await getDocs(collection(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'trades'));
-                const batch = writeBatch(db);
-                snap.docs.forEach(d => batch.delete(d.ref));
-                await batch.commit();
-            }
-        };
-        window.exportToCSV = () => {
+        // פונקציית ייצוא CSV
+        document.getElementById('exportCsvBtn').onclick = () => {
             if (!trades.length) return;
-            const headers = ["Ticker", "Buy Date", "Buy Price", "Quantity", "Target Price", "Status", "Exit Date", "Exit Price"];
-            const rows = trades.map(t => [t.ticker, t.buyDate, t.buyPrice, t.quantity, t.targetPrice, t.status, t.exitDate || "", t.exitPrice || ""]);
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF" + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            let csv = "\uFEFF"; // BOM for Hebrew support in Excel
+            csv += "Ticker,Status,Buy Date,Buy Price,Quantity,Total Buy,Exit Date,Exit Price,Result %,Result $\n";
+            trades.forEach(t => {
+                const totalBuy = t.buyPrice * t.quantity;
+                const resultPerc = t.status === 'closed' ? (((t.exitPrice - t.buyPrice) / t.buyPrice) * 100).toFixed(2) : "";
+                const resultSum = t.status === 'closed' ? ((t.exitPrice - t.buyPrice) * t.quantity).toFixed(2) : "";
+                csv += `${t.ticker},${t.status},${t.buyDate},${t.buyPrice},${t.quantity},${totalBuy},${t.exitDate || ""},${t.exitPrice || ""},${resultPerc}%,${resultSum}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", "trades.csv");
-            document.body.appendChild(link);
+            link.href = URL.createObjectURL(blob);
+            link.download = `trades_export_${new Date().toLocaleDateString('he-IL')}.csv`;
             link.click();
-            document.body.removeChild(link);
         };
 
-        document.getElementById('buyPrice').oninput = document.getElementById('quantity').oninput = () => {
-            const p = parseFloat(document.getElementById('buyPrice').value) || 0;
-            const q = parseFloat(document.getElementById('quantity').value) || 0;
-            document.getElementById('totalAmount').value = "סה\"כ: $" + (p * q).toLocaleString();
+        document.getElementById('clearAllBtn').onclick = async () => {
+            if (!confirm("האם אתה בטוח שברצונך למחוק את כל היסטוריית העסקאות? פעולה זו אינה ניתנת לביטול.")) return;
+            const batch = writeBatch(db);
+            const querySnapshot = await getDocs(collection(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades'));
+            querySnapshot.forEach((doc) => batch.delete(doc.ref));
+            await batch.commit();
         };
+
+        document.getElementById('loginBtn').onclick = async () => {
+            const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value;
+            try { await signInWithEmailAndPassword(auth, e, p); } catch (err) { document.getElementById('authError').innerText = "פרטי התחברות שגויים"; }
+        };
+        document.getElementById('signupBtn').onclick = async () => {
+            const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value;
+            if (p.length < 6) { document.getElementById('authError').innerText = "סיסמה חייבת להכיל 6 תווים"; return; }
+            try { await createUserWithEmailAndPassword(auth, e, p); } catch (err) { document.getElementById('authError').innerText = "שגיאה ברישום (ייתכן והמשתמש קיים)"; }
+        };
+        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+        document.getElementById('closeModalBtn').onclick = () => document.getElementById('closeTradeModal').classList.replace('flex', 'hidden');
+        window.deleteTrade = async (id) => { if(confirm("למחוק את העסקה?")) await deleteDoc(doc(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades', id)); };
         document.getElementById('buyDate').valueAsDate = new Date();
     </script>
 </body>
