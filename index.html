@@ -31,6 +31,18 @@
             color: #94a3b8;
             font-weight: 800;
         }
+        /* הסתרת חצי גלילה בדפדפן */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body class="p-2 md:p-8 text-slate-900">
@@ -98,6 +110,11 @@
                                 <input type="number" step="0.01" id="buyPrice" placeholder="מחיר קנייה" class="p-2 border rounded-lg text-sm font-bold focus:border-indigo-500 outline-none" required>
                                 <input type="number" id="quantity" placeholder="כמות" class="p-2 border rounded-lg text-sm font-bold focus:border-indigo-500 outline-none" required>
                             </div>
+                            
+                            <div class="space-y-1">
+                                <input type="number" step="0.01" id="sp500Buy" placeholder="S&P 500 בקנייה (אופציונלי)" class="w-full p-2 border rounded-lg text-sm focus:border-indigo-500 outline-none">
+                            </div>
+
                             <input type="text" id="totalAmountDisplay" placeholder='סה"כ עסקה' class="w-full p-2 border rounded-lg bg-indigo-50 text-indigo-900 font-black text-sm" readonly>
                             
                             <div class="grid grid-cols-2 gap-2">
@@ -187,6 +204,11 @@
                         <input type="number" step="0.01" id="exitPrice" placeholder="0.00" class="w-full p-3 border rounded-xl text-sm font-bold">
                     </div>
                 </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1 mr-1 uppercase">מדד S&P 500 ביציאה (אופציונלי)</label>
+                    <input type="number" step="0.01" id="sp500Exit" placeholder="מדד להשוואה" class="w-full p-3 border rounded-xl text-sm">
+                </div>
                 
                 <div id="closingProjection" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hidden">
                     <p class="text-[10px] text-slate-500 font-bold mb-1 uppercase">תוצאה במימוש:</p>
@@ -209,6 +231,87 @@
         </div>
     </div>
 
+    <!-- מודל עריכת עסקה -->
+    <div id="editTradeModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-[120]">
+        <div class="card w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in duration-200 shadow-2xl">
+            <h2 class="text-2xl font-black mb-4">עריכת עסקה: <span id="editModalTickerTitle" class="text-indigo-600"></span></h2>
+            
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">טיקר</label>
+                        <input type="text" id="editTicker" class="w-full p-2 border rounded-lg text-sm font-bold uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">תאריך קנייה</label>
+                        <input type="date" id="editBuyDate" class="w-full p-2 border rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">מחיר קנייה</label>
+                        <input type="number" step="0.01" id="editBuyPrice" class="w-full p-2 border rounded-lg text-sm font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">כמות</label>
+                        <input type="number" id="editQuantity" class="w-full p-2 border rounded-lg text-sm font-bold">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">מחיר יעד</label>
+                        <input type="number" step="0.01" id="editTargetPrice" class="w-full p-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">סטופ לוס</label>
+                        <input type="number" step="0.01" id="editStopLoss" class="w-full p-2 border rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">S&P 500 בקנייה</label>
+                        <input type="number" step="0.01" id="editSp500Buy" class="w-full p-2 border rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1">הערות קנייה</label>
+                    <textarea id="editBuyReason" rows="2" class="w-full p-2 border rounded-lg text-sm"></textarea>
+                </div>
+
+                <div id="editClosedFields" class="hidden p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-4 mt-4">
+                    <h3 class="text-sm font-black text-slate-600">פרטי סגירה</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-1">תאריך סגירה</label>
+                            <input type="date" id="editExitDate" class="w-full p-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-400 mb-1">מחיר סגירה</label>
+                            <input type="number" step="0.01" id="editExitPrice" class="w-full p-2 border rounded-lg text-sm font-bold">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">S&P 500 במכירה</label>
+                        <input type="number" step="0.01" id="editSp500Exit" class="w-full p-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">הערות מכירה</label>
+                        <textarea id="editExitReason" rows="2" class="w-full p-2 border rounded-lg text-sm"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button id="confirmEditBtn" class="flex-[2] bg-indigo-600 text-white py-3 rounded-xl font-black shadow-lg hover:bg-indigo-700 transition-all">שמור שינויים</button>
+                    <button id="closeEditModalBtn" class="flex-1 bg-slate-200 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-300 transition-all">ביטול</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -219,10 +322,11 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'stock-journal-cfa54';
+        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'stock-journal-app';
 
         let trades = [];
         let tradeToCloseId = null;
+        let tradeToEditId = null;
         let unsubscribe = null;
 
         const initAuth = async () => {
@@ -254,6 +358,14 @@
                 updateStats();
             }, (err) => console.error("Firestore Error:", err));
         }
+
+        // המרת תאריך מ-DD.MM.YYYY ל-YYYY-MM-DD
+        const formatDateForInput = (dateStr) => {
+            if(!dateStr) return "";
+            const parts = dateStr.split('.');
+            if(parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            return dateStr;
+        };
 
         const updateProjections = () => {
             const bp = parseFloat(document.getElementById('buyPrice').value);
@@ -308,6 +420,65 @@
             document.getElementById(id).oninput = updateProjections;
         });
 
+        // פתיחת מודל עריכה
+        window.openEditModal = (id) => {
+            tradeToEditId = id;
+            const t = trades.find(x => x.id === id);
+            
+            document.getElementById('editModalTickerTitle').innerText = t.ticker;
+            document.getElementById('editTicker').value = t.ticker;
+            document.getElementById('editBuyDate').value = formatDateForInput(t.buyDate);
+            document.getElementById('editBuyPrice').value = t.buyPrice;
+            document.getElementById('editQuantity').value = t.quantity;
+            document.getElementById('editTargetPrice').value = t.targetPrice || '';
+            document.getElementById('editStopLoss').value = t.stopLoss || '';
+            document.getElementById('editSp500Buy').value = t.sp500Buy || '';
+            document.getElementById('editBuyReason').value = t.buyReason || '';
+
+            const closedFields = document.getElementById('editClosedFields');
+            if (t.status === 'closed') {
+                closedFields.classList.remove('hidden');
+                document.getElementById('editExitDate').value = formatDateForInput(t.exitDate);
+                document.getElementById('editExitPrice').value = t.exitPrice || '';
+                document.getElementById('editSp500Exit').value = t.sp500Exit || '';
+                document.getElementById('editExitReason').value = t.exitReason || '';
+            } else {
+                closedFields.classList.add('hidden');
+            }
+
+            document.getElementById('editTradeModal').classList.replace('hidden', 'flex');
+        };
+
+        document.getElementById('closeEditModalBtn').onclick = () => {
+            document.getElementById('editTradeModal').classList.replace('flex', 'hidden');
+        };
+
+        document.getElementById('confirmEditBtn').onclick = async () => {
+            if (!auth.currentUser) return;
+            const t = trades.find(x => x.id === tradeToEditId);
+            
+            const updatedData = {
+                ticker: document.getElementById('editTicker').value.toUpperCase(),
+                buyDate: new Date(document.getElementById('editBuyDate').value).toLocaleDateString('he-IL'),
+                buyPrice: parseFloat(document.getElementById('editBuyPrice').value),
+                quantity: parseInt(document.getElementById('editQuantity').value),
+                targetPrice: parseFloat(document.getElementById('editTargetPrice').value) || null,
+                stopLoss: parseFloat(document.getElementById('editStopLoss').value) || null,
+                sp500Buy: parseFloat(document.getElementById('editSp500Buy').value) || null,
+                buyReason: document.getElementById('editBuyReason').value
+            };
+
+            if (t.status === 'closed') {
+                updatedData.exitDate = new Date(document.getElementById('editExitDate').value).toLocaleDateString('he-IL');
+                updatedData.exitPrice = parseFloat(document.getElementById('editExitPrice').value) || null;
+                updatedData.sp500Exit = parseFloat(document.getElementById('editSp500Exit').value) || null;
+                updatedData.exitReason = document.getElementById('editExitReason').value;
+            }
+
+            await updateDoc(doc(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades', tradeToEditId), updatedData);
+            document.getElementById('editTradeModal').classList.replace('flex', 'hidden');
+        };
+
         window.openCloseModal = (id) => {
             tradeToCloseId = id;
             const t = trades.find(x => x.id === id);
@@ -315,6 +486,7 @@
             document.getElementById('modalBuyDetails').innerText = `קנייה: $${t.buyPrice} | כמות: ${t.quantity} | סה"כ: $${(t.buyPrice * t.quantity).toLocaleString()}`;
             document.getElementById('exitDate').valueAsDate = new Date();
             document.getElementById('exitPrice').value = "";
+            document.getElementById('sp500Exit').value = "";
             document.getElementById('exitReason').value = "";
             document.getElementById('closingProjection').classList.add('hidden');
             document.getElementById('closeTradeModal').classList.replace('hidden', 'flex');
@@ -323,13 +495,19 @@
         document.getElementById('confirmCloseBtn').onclick = async () => {
             const ep = parseFloat(document.getElementById('exitPrice').value);
             const ed = document.getElementById('exitDate').value;
+            const spExit = parseFloat(document.getElementById('sp500Exit').value);
+            
             if (!ep || !ed || !auth.currentUser) return;
-            await updateDoc(doc(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades', tradeToCloseId), {
+            
+            const payload = {
                 status: 'closed',
                 exitPrice: ep,
                 exitDate: new Date(ed).toLocaleDateString('he-IL'),
                 exitReason: document.getElementById('exitReason').value
-            });
+            };
+            if (spExit) payload.sp500Exit = spExit;
+
+            await updateDoc(doc(db, 'artifacts', currentAppId, 'users', auth.currentUser.uid, 'trades', tradeToCloseId), payload);
             document.getElementById('closeTradeModal').classList.replace('flex', 'hidden');
         };
 
@@ -343,6 +521,7 @@
                 quantity: parseInt(document.getElementById('quantity').value),
                 targetPrice: parseFloat(document.getElementById('targetPrice').value) || null,
                 stopLoss: parseFloat(document.getElementById('stopLoss').value) || null,
+                sp500Buy: parseFloat(document.getElementById('sp500Buy').value) || null,
                 buyReason: document.getElementById('buyReason').value,
                 status: 'open',
                 createdAt: Date.now()
@@ -379,6 +558,26 @@
                     const diffPerc = ((t.exitPrice - t.buyPrice) / t.buyPrice) * 100;
                     const diffAmount = (t.exitPrice - t.buyPrice) * t.quantity;
                     const isWin = diffAmount >= 0;
+                    
+                    // חישוב אלפא מול ה-SP500
+                    let sp500Comparison = '';
+                    if (t.sp500Buy && t.sp500Exit) {
+                        const spReturn = ((t.sp500Exit - t.sp500Buy) / t.sp500Buy) * 100;
+                        const alpha = diffPerc - spReturn;
+                        sp500Comparison = `
+                            <div class="mt-3 pt-2 border-t border-slate-100/50">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <span class="text-slate-400 font-bold uppercase">תשואת S&P500:</span>
+                                    <span class="font-black ${spReturn >= 0 ? 'text-emerald-500' : 'text-red-400'}">${spReturn >= 0 ? '+' : ''}${spReturn.toFixed(2)}%</span>
+                                </div>
+                                <div class="flex justify-between items-center text-[11px] mt-0.5">
+                                    <span class="text-indigo-400 font-bold uppercase">אלפא (פער):</span>
+                                    <span class="font-black ${alpha >= 0 ? 'text-indigo-600' : 'text-orange-500'}">${alpha >= 0 ? '+' : ''}${alpha.toFixed(2)}%</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+
                     plHtml = `
                         <div class="flex flex-col gap-2">
                             <div>
@@ -387,8 +586,9 @@
                                 </span>
                                 <div class="text-xs ${isWin ? 'text-emerald-500/70' : 'text-red-400/70'} font-bold mt-1">$${diffAmount.toLocaleString()}</div>
                             </div>
+                            ${sp500Comparison}
                             ${t.exitReason ? `
-                                <div class="reason-box text-slate-600 bg-emerald-50/40 p-3 rounded-xl border border-emerald-100 relative">
+                                <div class="reason-box text-slate-600 bg-emerald-50/40 p-3 rounded-xl border border-emerald-100 relative mt-2">
                                     <div class="data-label text-emerald-500 mb-1">הערות סגירה:</div>
                                     ${t.exitReason}
                                 </div>` : ''}
@@ -445,11 +645,16 @@
                         </div>
                     </td>
                     <td class="p-5 text-left">
-                        <div class="flex gap-2 justify-end items-start h-full pt-1">
-                            ${!isClosed ? `<button onclick="window.openCloseModal('${t.id}')" class="bg-indigo-600 text-white px-4 py-2 rounded-xl font-black text-xs hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95">סגור עסקה</button>` : ''}
-                            <button onclick="window.deleteTrade('${t.id}')" class="text-slate-200 hover:text-red-500 transition-all p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
+                        <div class="flex flex-wrap gap-2 justify-end items-start h-full pt-1 w-[120px]">
+                            ${!isClosed ? `<button onclick="window.openCloseModal('${t.id}')" class="bg-indigo-600 text-white w-full py-2 rounded-xl font-black text-xs hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95 mb-1">סגור עסקה</button>` : ''}
+                            <div class="flex gap-2 w-full justify-end">
+                                <button onclick="window.openEditModal('${t.id}')" class="text-slate-400 hover:text-indigo-500 transition-all p-1 bg-slate-100 rounded-lg" title="ערוך עסקה">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                </button>
+                                <button onclick="window.deleteTrade('${t.id}')" class="text-slate-400 hover:text-red-500 transition-all p-1 bg-slate-100 rounded-lg" title="מחק עסקה">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            </div>
                         </div>
                     </td>
                 `;
@@ -476,10 +681,13 @@
 
         document.getElementById('exportCsvBtn').onclick = () => {
             if (!trades.length) return;
-            let csv = "\uFEFFTicker,Status,Buy Date,Buy Price,Quantity,Buy Reason,Target,Stop Loss,Exit Date,Exit Price,Exit Reason,Result %\n";
+            let csv = "\uFEFFTicker,Status,Buy Date,Buy Price,Quantity,Buy Reason,Target,Stop Loss,SP500 Buy,Exit Date,Exit Price,SP500 Exit,Exit Reason,Result %,Alpha %\n";
             trades.forEach(t => {
-                const resP = t.status === 'closed' ? (((t.exitPrice - t.buyPrice) / t.buyPrice) * 100).toFixed(2) : "";
-                csv += `"${t.ticker}","${t.status}","${t.buyDate}",${t.buyPrice},${t.quantity},"${(t.buyReason||"").replace(/"/g,'""')}","${t.targetPrice||""}","${t.stopLoss||""}","${t.exitDate || ""}",${t.exitPrice || ""},"${(t.exitReason||"").replace(/"/g,'""')}",${resP}%\n`;
+                const resP = t.status === 'closed' ? (((t.exitPrice - t.buyPrice) / t.buyPrice) * 100) : null;
+                const spReturn = (t.sp500Buy && t.sp500Exit) ? (((t.sp500Exit - t.sp500Buy) / t.sp500Buy) * 100) : null;
+                const alpha = (resP !== null && spReturn !== null) ? (resP - spReturn).toFixed(2) : "";
+                
+                csv += `"${t.ticker}","${t.status}","${t.buyDate}",${t.buyPrice},${t.quantity},"${(t.buyReason||"").replace(/"/g,'""')}","${t.targetPrice||""}","${t.stopLoss||""}","${t.sp500Buy||""}","${t.exitDate || ""}",${t.exitPrice || ""},"${t.sp500Exit||""}","${(t.exitReason||"").replace(/"/g,'""')}","${resP ? resP.toFixed(2)+'%' : ''}","${alpha ? alpha+'%' : ''}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
